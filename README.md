@@ -43,14 +43,14 @@ public class MyCommandClass {
         player.sendMessage("Hello, World!");
     }
 
-    @Command(names = {"mycommand greet greetTo"}, description = "Greet to someone", inGameOnly = false)
+    @Command(names = {"mycommand greet greetTo"}, description = "Greet to someone", playerOnly = false)
     public void greeting(CommandSender sender, @Param(name = "target") Player target, @Param(name = "message", wildcard = true) String message) {
         // we provide a transformer that automatically solves argument to player
         // wildcard accepts all arguments in the tail of the command.
         target.sendMessage("Greeting from " + sender.getName() + ": " + message);
     }
 
-    @Command(names = {"mycommand greet greetAll"}, description = "Greet to everyone", inGameOnly = false)
+    @Command(names = {"mycommand greet greetAll"}, description = "Greet to everyone", playerOnly = false)
     public void greeting(CommandSender sender, @Param(name = "message", wildcard = true) String message) {
         // wildcard accepts all arguments in the tail of the command.
         for (Player target : Bukkit.getOnlinePlayers()) {
