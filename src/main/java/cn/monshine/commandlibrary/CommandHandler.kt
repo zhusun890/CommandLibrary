@@ -87,7 +87,7 @@ object CommandHandler {
 
             val label = segments[0]
             val tree = registeredCommandsTree.computeIfAbsent(label) {
-                CommandTree(label, null).also {
+                CommandTree(label, null, true).also {
                     commandMap.register(label, "", BukkitCommand(it))
                 }
             }

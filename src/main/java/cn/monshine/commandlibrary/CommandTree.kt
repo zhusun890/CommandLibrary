@@ -3,7 +3,7 @@
 package cn.monshine.commandlibrary
 
 @Suppress("MemberVisibilityCanBePrivate")
-class CommandTree(val label: String, val parent: CommandTree?) {
+class CommandTree(val label: String, val parent: CommandTree?, val rootNode: Boolean = false) {
     /**
      * A map of subcommands and their corresponding command trees.
 
@@ -31,8 +31,14 @@ class CommandTree(val label: String, val parent: CommandTree?) {
      */
     fun resolve(remaining: MutableList<String>): CommandTree? {
         if (subCommands.isEmpty() && defaultCommand != null) return this
+        if (remaining.isEmpty() && defaultCommand != null && rootNode) return this
+
         if (remaining.isEmpty() || remaining.first() !in subCommands) {
-            return null
+            return if (rootNode) {
+                this
+            } else {
+                null
+            }
         }
 
         val label = remaining.removeFirst()
