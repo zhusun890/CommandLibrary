@@ -34,7 +34,8 @@ class CommandTree(val label: String, val parent: CommandTree?, val rootNode: Boo
         if (remaining.isEmpty() && defaultCommand != null && rootNode) return this
 
         if (remaining.isEmpty() || remaining.first() !in subCommands) {
-            return if (rootNode) {
+            val rootCommand = defaultCommand
+            return if (rootNode && rootCommand != null) {
                 this
             } else {
                 null
@@ -98,7 +99,7 @@ class CommandTree(val label: String, val parent: CommandTree?, val rootNode: Boo
         var iteration = parent ?: return label
         while (iteration.parent != null) {
             trees.addFirst(iteration)
-            iteration = iteration.parent!!
+            iteration = iteration.parent
         }
         trees.addFirst(iteration)
 
@@ -117,7 +118,7 @@ class CommandTree(val label: String, val parent: CommandTree?, val rootNode: Boo
 
         var iteration = parent ?: return null
         while (iteration.internalTopic == null && iteration.parent != null) {
-            iteration = iteration.parent!!
+            iteration = iteration.parent
         }
 
         return iteration.internalTopic
