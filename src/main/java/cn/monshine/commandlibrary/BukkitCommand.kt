@@ -15,7 +15,7 @@ class BukkitCommand(@Suppress("MemberVisibilityCanBePrivate") val parent: Comman
             command.defaultCommand?.execute(sender, remaining.toTypedArray(), command.getFullName())
         } else {
             val actualCommands = parent.getActualCommandNodes()
-                .filter { it.defaultCommand?.command?.permission.let(sender::hasPermission) }
+                .filter { it.defaultCommand?.command?.permission?.let { perm -> perm.isEmpty() || sender.hasPermission(perm) } ?: false }
 
             val topicAvailable = actualCommands
                 .filter { it.resolveTopic() != null }
