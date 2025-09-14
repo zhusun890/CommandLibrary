@@ -29,6 +29,6 @@ class PlayerTransformer : ParameterTransformer<Player> {
         args: List<String>,
         current: String
     ): List<String> {
-        return Bukkit.getOnlinePlayers().map { it.name }
+        return Bukkit.getOnlinePlayers().map { it.name }.filter { it.startsWith(current, ignoreCase = true) }
     }
 }

@@ -20,6 +20,6 @@ class BooleanTransformer : ParameterTransformer<Boolean> {
         args: List<String>,
         current: String
     ): List<String> {
-        return listOf("true", "false")
+        return listOf("true", "false").filter { it.startsWith(current, true) }
     }
 }
