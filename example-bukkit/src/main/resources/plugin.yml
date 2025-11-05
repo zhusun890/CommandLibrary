@@ -1,0 +1,6 @@
+name: CommandLibraryExample
+main: cn.monshine.commandlibrary.example.BukkitExamplePlugin
+version: 1.0.0
+description: Example plugin using CommandLibrary Bukkit adapter
+authors:
+  - monshine

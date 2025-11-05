@@ -1,3 +1,0 @@
-name: CommandLibrary
-version: '${project.version}'
-main: cn.monshine.commandlibrary.CommandLibrary
