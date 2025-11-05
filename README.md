@@ -1,80 +1,109 @@
 # CommandLibrary
 
-### Overview of CommandLibrary
+CommandLibrary is a platform-agnostic command framework with small adapters for different runtimes. It provides a clean annotation-based API, type-safe argument mapping via transformers, topic-based help, tab completion, permission and sender checks, and pluggable async execution.
 
-CommandLibrary is a lightweight yet powerful command processing framework designed specifically for the Minecraft Bukkit platform, tailored to work with versions 1.8.x up to the latest available. It simplifies the development process by providing a convenient and efficient way to manage commands in your server plugins.
+Modules
+- commandlibrary-core: platform-neutral core (annotations, parser, manager, transformers API)
+- platform-bukkit: Bukkit adapter library
+- platform-cli: CLI adapter library
+- example-bukkit: a minimal Bukkit plugin using the facade and sample commands
+- example-cli: a minimal CLI app using the CLI adapter
 
----
+Quick Start
+- Bukkit (Kotlin)
+  - Add dependency on `platform-bukkit` (and `spigot-api`). In your JavaPlugin:
+  ```kotlin
+  class MyPlugin : JavaPlugin() {
+      override fun onEnable() {
+          BukkitCommands.install(this, MyCommands::class.java, MyCommandB::class.java)
+      }
+  }
+  ```
+  - Define commands (Kotlin/Java both supported):
+  ```kotlin
+  import cn.monshine.commandlibrary.annotation.Command
+  import cn.monshine.commandlibrary.annotation.Param
+  import org.bukkit.entity.Player
 
-### Getting Started
+  object MyCommands {
+      @JvmStatic
+      @Command(names = ["hello"], description = "Say hi")
+      fun hello(sender: Player, @Param(name = "who", defaultValue = "world") who: String) {
+          sender.sendMessage("&aHello, $who!")
+      }
+  }
+  ```
+  - PlayerTransformer is registered automatically by the Bukkit adapter; basic type transformers (String/Boolean/Int/Float/Double) are auto-registered by default.
 
-#### Installation
+- CLI (Kotlin)
+  ```kotlin
+  import cn.monshine.commandlibrary.CommandManager
+  import cn.monshine.commandlibrary.cli.CLIEnvironment
+  import cn.monshine.commandlibrary.cli.CLIRegistrar
+  import cn.monshine.commandlibrary.cli.CliSender
 
-To use CommandLibrary, you need to follow these steps:
+  val env = CLIEnvironment(ansi = true) // set ansi=false to strip &-codes
+  val registrar = CLIRegistrar()
+  val manager = CommandManager(env, registrar)
+  manager.registerCommands(CliCommands::class.java)
 
-1. **Download**: Obtain the latest version of CommandLibrary from its official repository or plugin website.
-2. **Add to Your Project**: Place the JAR file into the `lib` folder of your Minecraft Bukkit project.
-3. **Include Dependency**: Ensure that your project is configured to include the dependency in your build path.
+  val sender = CliSender(name = "cli", roles = setOf("op"))
+  registrar.executeLine(sender, "/echo hello world")
+  ```
+  See example-cli for a tiny REPL app.
 
-#### Usage
+Annotations and Parameters
+- @Command(names, description, permission, playerOnly, async)
+  - `names`: support subcommands via spaces, e.g. `"root sub a"`
+  - `permission`: empty allows all; value `op` checks operator/op-role
+  - `playerOnly`: requires platform sender to be a player (Bukkit)/true (CLI default)
+  - `async`: run in the environment’s async executor
+- @Param(name, defaultValue, wildcard, type)
+  - `defaultValue`: used if the argument is omitted
+  - `wildcard=true`: capture the rest of the line as one String
+  - `type=FLAG`: boolean flag recognized by `-name`
+- @CommandTopicGetter(label)
+  - Provide a CommandTopic for a label path; help output groups by topics
 
-CommandLibrary can be integrated into your Bukkit plugins with ease. Here's a brief guide on how to get started:
+Transformers
+- Built-in (auto-registered): String, Boolean, Int, Float, Double
+- Bukkit adapter auto-registers: org.bukkit.entity.Player
+- Register more via `manager.registerTransformer(MyType::class.java, MyTransformer())`
 
-1. **Import CommandLibrary**: Include necessary imports for command handling within your plugin files.
-2. **Create Commands**: Define your commands using annotations.
-3. **Register Commands**: Use the library's methods to register your commands with the server's command map.
-4. **Handle Permissions**: Assign permissions to commands if needed.
+Environment and Registrar
+- `CommandEnvironment<S>`: messaging, permission, player/op checks, formatting, async executor
+- `CommandRegistrar<S>`: register root labels with the host platform; also provides `initialize(manager)` to install default and platform-specific transformers
+- Bukkit: uses server scheduler for async; translates `&` color codes using ChatColor
+- CLI: can colorize `&` codes to ANSI (configurable with `ansi` flag) or strip them; inject your own `ExecutorService` for async
 
-#### Example Code
+Color Formatting
+- Use `&` codes in messages (e.g., `&cError`, `&7details`, styles: `&l`, `&n`, `&o`, `&m`, reset: `&r`)
+- Bukkit: uses ChatColor.translateAlternateColorCodes
+- CLI: `CLIEnvironment(ansi=true)` renders ANSI sequences; `ansi=false` strips color codes to plain text
 
-```java
-import cn.monshine.commandlibrary.CommandTopic;
-import cn.monshine.commandlibrary.annotation.Command;
-import cn.monshine.commandlibrary.annotation.CommandTopicGetter;
-import cn.monshine.commandlibrary.annotation.Param;
-import com.google.common.collect.ImmutableList;
-import org.bukkit.Bukkit;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+Async Execution
+- `@Command(async = true)` delegates to `env.runAsync { ... }`
+- Bukkit: backed by the server scheduler
+- CLI: pass your own `ExecutorService` when constructing `CLIEnvironment`
 
-public class MyCommandClass {
-    @Command(names = {"mycommand"}, description = "This is a simple command")
-    public void myCommand(Player player) {
-        player.sendMessage("Hello, World!");
-    }
+Tab Completion
+- Subcommand labels are suggested by the manager
+- Parameter completion is provided by each ParameterTransformer
 
-    @Command(names = {"mycommand greet greetTo"}, description = "Greet to someone", playerOnly = false)
-    public void greeting(CommandSender sender, @Param(name = "target") Player target, @Param(name = "message", wildcard = true) String message) {
-        // we provide a transformer that automatically solves argument to player
-        // wildcard accepts all arguments in the tail of the command.
-        target.sendMessage("Greeting from " + sender.getName() + ": " + message);
-    }
+Examples
+- Bukkit plugin example: `example-bukkit`
+- CLI app example: `example-cli`
 
-    @Command(names = {"mycommand greet greetAll"}, description = "Greet to everyone", playerOnly = false)
-    public void greeting(CommandSender sender, @Param(name = "message", wildcard = true) String message) {
-        // wildcard accepts all arguments in the tail of the command.
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            target.sendMessage("Greeting from " + sender.getName() + ": " + message);
-        }
-    }
-
-    @CommandTopicGetter(label = "mycommand greet")
-    public static CommandTopic greetTopicGetter() {
-        return new CommandTopic("Greeting Commands",
-                ImmutableList.of("Say greeting messages",
-                        "to someone or everyone!"
-                )
-        );
-    }
-}
+Build and Test
+- Build all modules:
+```
+mvn clean package
 ```
 
-To register this command, you would call `CommandLibrary.registerCommands(<your command class>)` in your plugin's main class.
+Extending To New Platforms
+- Implement `CommandEnvironment<S>` and `CommandRegistrar<S>`
+- Construct `CommandManager<S>(env, registrar)`; registrar.initialize(manager) will install basic transformers
+- Provide platform transformers and a minimal facade (like BukkitCommands) to simplify usage
 
----
-
-### Features
-
-- **Flexible Command Registration**: Register commands using annotations or the traditional Java method.
-- **Permission Management**: Assign permissions to commands and check them before execution.
-- **Parameter Handling**: Define parameters for your commands with ease, including flags and variable arguments.
+License
+- MIT (see LICENSE)
