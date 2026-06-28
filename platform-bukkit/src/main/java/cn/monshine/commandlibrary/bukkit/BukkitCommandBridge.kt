@@ -14,7 +14,6 @@ class BukkitCommandBridge(
     }
 
     override fun tabComplete(sender: CommandSender, alias: String, args: Array<out String>): MutableList<String> {
-        return completer(sender, alias, args.filter { it.isNotEmpty() }).toMutableList()
+        return completer(sender, alias, args.toList()).toMutableList()
     }
 }
-
